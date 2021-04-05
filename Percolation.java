@@ -7,9 +7,11 @@ public class Percolation {
     private final int n;
     private final WeightedQuickUnionUF weightedQuickUnionUF;
 
+    
     // creates n-by-n grid, with all sites initially blocked
     public Percolation(int n) {
-        weightedQuickUnionUF = new WeightedQuickUnionUF(n * n);
+        // plus a visual top site and a visual bottom site
+        weightedQuickUnionUF = new WeightedQuickUnionUF(n * n + 2);
 
         if (n <= 0) {
             throw new IllegalArgumentException();
@@ -23,16 +25,10 @@ public class Percolation {
                 sites[row][col] = false;
             }
         }
+    }
 
-        // connect top row to visual top site
-        for (int col = 1; col < n; col++) {
-            weightedQuickUnionUF.union(col, 0);
-        }
-
-        // connect botton row to visual bottom site
-        for (int col = n * n - n; col < n * n; col++) {
-            weightedQuickUnionUF.union(col, n * n - 1);
-        }
+    private int getP(int row, int col) {
+        return (row - 1) * n + col;
     }
 
     // opens the site (row, col) if it is not open already
@@ -41,31 +37,34 @@ public class Percolation {
             sites[row - 1][col - 1] = true;
             openedSiteCound++;
 
-            // connect it to all of its adjacent open sites
-            int current = (row - 1) * n + col - 1;
-            int left = (row - 1) * n + col - 2;
-            int right = (row - 1) * n + col;
-            int top = (row - 2) * n + col - 1;
-            int bottom = row * n + col - 1;
-
-            // left site
+            // connect left site
             if (col > 1 && isOpen(row, col - 1)) {
-                weightedQuickUnionUF.union(left, current);
+                weightedQuickUnionUF.union(getP(row, col - 1), getP(row, col));
             }
 
-            // right site
+            // connect right site
             if (col < n && isOpen(row, col + 1)) {
-                weightedQuickUnionUF.union(right, current);
+                weightedQuickUnionUF.union(getP(row, col + 1), getP(row, col));
             }
 
-            // top site
+            // connect top site
             if (row > 1 && isOpen(row - 1, col)) {
-                weightedQuickUnionUF.union(top, current);
+                weightedQuickUnionUF.union(getP(row - 1, col), getP(row, col));
             }
 
-            // bottom site
+            // connect bottom site
             if (row < n && isOpen(row + 1, col)) {
-                weightedQuickUnionUF.union(bottom, current);
+                weightedQuickUnionUF.union(getP(row + 1, col), getP(row, col));
+            }
+
+            // connect visual top site
+            if (row == 1) {
+                weightedQuickUnionUF.union(getP(row, col), 0);
+            }
+
+            // connect visual bottom site
+            if (row == n) {
+                weightedQuickUnionUF.union(getP(row, col), n * n + 1);
             }
         }
     }
@@ -86,7 +85,7 @@ public class Percolation {
         if (!isOpen(row, col)) {
             return false;
         }
-        return weightedQuickUnionUF.find(0) == weightedQuickUnionUF.find((row - 1) * n + col - 1);
+        return weightedQuickUnionUF.find(0) == weightedQuickUnionUF.find(getP(row, col));
     }
 
     // returns the number of open sites
@@ -97,27 +96,25 @@ public class Percolation {
     // does the system percolate?
     public boolean percolates() {
         // if there is a full site in the bottom row
-        for (int col = 1; col <= n; col++) {
-            // System.out.println("is full? " + isFull(n, col));
-            if (isFull(n, col)) {
-                return true;
-            }
-        }
-        return false;
+        return weightedQuickUnionUF.find(0) == weightedQuickUnionUF.find(n * n + 1);
     }
 
     // test client (optional)
     public static void main(String[] args) {
         var test = new Percolation(5);
-        test.open(1, 1);
-        test.open(2, 1);
-        test.open(2, 2);
-        test.open(3, 2);
-        test.open(3, 3);
-        test.open(3, 4);
-        test.open(4, 4);
-        test.open(4, 5);
-        test.open(5, 4);
+        // test.open(1, 1);
+        test.open(1, 4);
+        // test.open(2, 1);
+        // test.open(2, 2);
+        // test.open(3, 2);
+        // test.open(3, 3);
+        // test.open(3, 4);
+        // test.open(4, 4);
+        // test.open(4, 5);
+        // test.open(5, 4);
+
+        System.out.println("*******");
+        System.out.println(test.isFull(1, 4));
 
         for (int row = 0; row < test.sites.length; row++) {
             for (int col = 0; col < test.sites[row].length; col++) {
@@ -126,7 +123,7 @@ public class Percolation {
             System.out.println();
         }
 
-        for (int i = 0; i < 25; i++) {
+        for (int i = 0; i < 27; i++) {
             System.out.println(i + " " + test.weightedQuickUnionUF.find(i));
         }
 
